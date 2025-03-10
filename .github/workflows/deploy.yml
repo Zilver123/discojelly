@@ -1,28 +1,40 @@
-name: Deploy to GitHub Pages
+name: Deploy Flutter Web
 
 on:
   push:
-    branches: [ "main" ]  # Triggers on main branch pushes
+    branches: [ "main" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required to push to gh-pages branch
-    
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Add build steps here if needed (e.g., npm run build)
-      # - name: Build
-      #   run: |
-      #     npm install
-      #     npm run build
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.22.0'  # Use latest stable version
+
+      - name: Install Chrome (required for web build)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglu1-mesa-dev chromium-browser
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Flutter Web
+        run: flutter build web --release --web-renderer html
+        env:
+          FLUTTER_WEB: true
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: ./  # Point to your built files directory
+          publish_dir: ./build/web  # Flutter's web build directory
